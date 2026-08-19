@@ -1,0 +1,7 @@
+{
+  "name": "pi-review-action",
+  "version": "1.0.0",
+  "private": true,
+  "description": "OpenCharly's org-wide PR-review GitHub Action: fresh independent AI validator with read-only GitHub tools and a Verdict-driven check outcome.",
+  "type": "module"
+}

@@ -1,0 +1,43 @@
+name: 'pi-review'
+description: "OpenCharly's org-wide PR-review action. Runs a fresh, independent AI validator
+  for the pull request in the triggering event, with read-only GitHub tools (PR diff, PR
+  commits, PR thread with the authoritative current body, CI status, PR metadata), a
+  deterministic Verdict: PASS|BLOCK final line, and a single PR comment. Emits the full
+  review as the `response` output and `success` for reliable gate wiring."
+branding:
+  icon: 'check-circle'
+  color: 'purple'
+
+inputs:
+  github_token:
+    description: 'GitHub token for API access. The default `GITHUB_TOKEN` works for all standard operations.'
+    required: true
+    default: ${{ github.token }}
+  provider:
+    description: 'LLM provider (openrouter/openai/...; passed to the chat-completions base URL and used for the model id).'
+    required: false
+    default: 'openrouter'
+  model:
+    description: 'Model id for the provider (e.g. ~deepseek/deepseek-v4-flash-latest, or the provider-native id).'
+    required: true
+  base_url:
+    description: 'Provider chat-completions base URL (https://<host>/api/v1).'
+    required: false
+    default: 'https://openrouter.ai/api/v1'
+  api_key:
+    description: 'Provider API key (never committed).'
+    required: true
+  max_turns:
+    description: 'Maximum agent tool-calling turns before finalizing (fail-safe clamp).'
+    required: false
+    default: '16'
+
+outputs:
+  response:
+    description: 'The validator review text (its final response, with the Verdict line).'
+  success:
+    description: "'true' if a response was produced; 'false' on a hard infra error."
+
+runs:
+  using: node24
+  main: index.js
