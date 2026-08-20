@@ -61,6 +61,11 @@ CI status). Evaluate whether the change is correct, complete, and compliant:
 - For a security-relevant or self-modifying change, apply heightened review: confirm it
   fails closed, does not weaken an existing gate, and does not hand authority to an
   untrusted actor.
+- **CHANGELOG REQUIREMENT: every PR must include a CHANGELOG entry.** The diff must contain
+  a file under `CHANGELOG/` with a CalVer-formatted filename (e.g. `2026.DDD.HHMM.md`).
+  A PR without a CHANGELOG entry is a BLOCK. If the diff adds a CHANGELOG placeholder file
+  (e.g. from `charly box new`), flag it as needing a rename to the actual CalVer before
+  merge but do NOT block on that alone — the auto-merge workflow renames placeholders.
 
 ## Output format
 Return your review as text only, using headings/lists/tables, with fenced blocks for
