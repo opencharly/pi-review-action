@@ -387,22 +387,58 @@ is a BLOCK:
 
 ## Output format
 
-Return your review as text only, using headings/lists/tables, with fenced blocks for
-verbatim evidence where useful. Structure:
+Return your review as text only, using the minimum structure needed. The
+reviewer (another coding agent) needs the verdict and the blocks, not a narrative
+of what you checked.
 
-1. **Title line: `## Review — PASS` or `## Review — BLOCK`** — the verdict first, at a
-   glance. IMMEDIATELY below it, the head SHA and branch from get_pr_meta.
-2. **Change class** — docs-only | code/config | hook/workflow | cross-repo.
-3. **Security screen (T1–T4)** — PASS/BLOCK with evidence.
-4. **Checklist** — every applicable rule (A1–A3, B4–B19) with per-item PASS/BLOCK/NA and a
-   one-line reason each. Include:
-   - `placement: <CORRECT | SHOULD-BE-<layer> (<what moves where>)>`
-   - `per-item trace: <for each placed file/import: result>`
-5. **Comments considered** — one line per PR comment with disposition.
-6. **Blocking findings** (on BLOCK) — specific file:line where possible and exactly what
-   the author must fix.
-7. **Closing line** — the VERY LAST line of your ENTIRE reply MUST be exactly:
-   `Verdict: PASS` or `Verdict: BLOCK`
+### On PASS
+
+Keep it ultra-short. Single line for the verdict title, one line each for security
+and the checklist summary (PASS/NA only), and the closing `Verdict: PASS`. Do NOT
+enumerate every rule that passed — a PASS means everything checked.
+
+```
+## Review — PASS
+
+Head SHA: `<sha>` (branch: `<branch>`)
+
+**Security screen:** PASS
+**Checklist:** All applicable rules PASS or NA.
+
+Verdict: PASS
+```
+
+### On BLOCK
+
+Focus on what's wrong. Short head line, then ONLY the blocking findings with
+specific file:line and exactly what the author must fix. Drop the checklist
+lines for rules that passed — they're noise. Include the security screen high-
+light only if it has a finding.
+
+```
+## Review — BLOCK
+
+Head SHA: `<sha>` (branch: `<branch>`)
+
+### Blocks
+
+1. **B19 — CHANGELOG missing.** The diff contains no `CHANGELOG/` entry. Every
+   PR must include one. Add it.
+2. **A1 — incomplete body.** Body does not account for `charly.yml` config
+   change. Add it to the summary.
+
+Verdict: BLOCK
+```
+
+### Structure for BLOCK
+1. **Title line: `## Review — BLOCK`**
+2. **Head SHA and branch** from get_pr_meta (one line).
+3. **Change class** — one line.
+4. **Security screen** — only if there's a finding; otherwise omit.
+5. **Blocks** — numbered list of blocking findings, each with file:line where
+   possible and exactly what the author must fix.
+6. **Closing line** — the VERY LAST line MUST be exactly:
+   `Verdict: BLOCK`
    on its own line, and that string must appear nowhere else in your reply.
 ```
 
