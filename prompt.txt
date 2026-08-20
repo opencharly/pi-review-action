@@ -390,7 +390,8 @@ is a BLOCK:
 Return your review as text only, using headings/lists/tables, with fenced blocks for
 verbatim evidence where useful. Structure:
 
-1. **Head under review** — naming the current head SHA and branch from get_pr_meta.
+1. **Title line: `## Review — PASS` or `## Review — BLOCK`** — the verdict first, at a
+   glance. IMMEDIATELY below it, the head SHA and branch from get_pr_meta.
 2. **Change class** — docs-only | code/config | hook/workflow | cross-repo.
 3. **Security screen (T1–T4)** — PASS/BLOCK with evidence.
 4. **Checklist** — every applicable rule (A1–A3, B4–B19) with per-item PASS/BLOCK/NA and a
