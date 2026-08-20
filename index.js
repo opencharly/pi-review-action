@@ -40,9 +40,23 @@ const BASE_SHA = (EV.pull_request && EV.pull_request.base && EV.pull_request.bas
 
 function setOutput(name, value) {
   const p = process.env.GITHUB_OUTPUT;
-  if (!p) { console.log('::set-output name=' + name + '::' + String(value)); return; }
-  try { fs.appendFileSync(p, '\n' + name + '=' + String(value).replace(/\r?\n/g, ' ')); }
-  catch (e) { console.log('::warning::setOutput write failed: ' + e.message); }
+  value = String(value);
+  if (!p) { console.log('::set-output name=' + name + '::' + value); return; }
+  try {
+    // GITHUB_OUTPUT spec: a value with no newlines may use the `name=value` line; a
+    // multi-line value MUST use the heredoc form `name<<DELIM\nvalue\nDELIM` so the newlines
+    // survive. The gate's verdict step greps `^Verdict: (PASS|BLOCK)$` at line-start, so
+    // collapsing newlines here silently makes the verdict undetectable (R1 live-run catch).
+    const needsDelim = value.indexOf('\n') >= 0 || value.indexOf('\r') >= 0;
+    if (!needsDelim) {
+      fs.appendFileSync(p, '\n' + name + '=' + value);
+    } else {
+      let delim;
+      do { delim = 'piout_' + Math.random().toString(36).slice(2, 10); }
+      while (value.indexOf(delim) >= 0);
+      fs.appendFileSync(p, '\n' + name + '<<' + delim + '\n' + value + '\n' + delim);
+    }
+  } catch (e) { console.log('::warning::setOutput write failed: ' + e.message); }
 }
 
 async function gh(path, opts = {}) {
