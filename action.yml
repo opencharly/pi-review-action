@@ -9,6 +9,9 @@ branding:
   color: 'purple'
 
 inputs:
+  pr_number:
+    description: 'PR number to review (used when no pull_request event context, e.g. workflow_dispatch re-run)'
+    required: false
   github_token:
     description: 'GitHub token for API access. The default `GITHUB_TOKEN` works for all standard operations.'
     required: true

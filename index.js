@@ -34,9 +34,10 @@ const EV = loadEvent();
 const Owner = (EV.repository && EV.repository.owner && EV.repository.owner.login) ||
   (GITHUB_REPOSITORY.split('/')[0] || '');
 const Repo = (EV.repository && EV.repository.name) || (GITHUB_REPOSITORY.split('/')[1] || '');
-const PR = EV.pull_request && EV.pull_request.number;
-const HEAD_SHA = (EV.pull_request && EV.pull_request.head && EV.pull_request.head.sha) || '';
-const BASE_SHA = (EV.pull_request && EV.pull_request.base && EV.pull_request.base.sha) || '';
+const PR_INPUT = input('pr_number');
+let PR = EV.pull_request && EV.pull_request.number;
+let HEAD_SHA = (EV.pull_request && EV.pull_request.head && EV.pull_request.head.sha) || '';
+let BASE_SHA = (EV.pull_request && EV.pull_request.base && EV.pull_request.base.sha) || '';
 
 function setOutput(name, value) {
   const p = process.env.GITHUB_OUTPUT;
@@ -287,9 +288,20 @@ function extractVerdict(text) {
 
 async function main() {
   if (!PR) {
-    setOutput('success', 'false');
-    setOutput('response', '');
-    throw new Error('No pull_request context in this run.');
+    if (PR_INPUT) {
+      // No pull_request event context (e.g. workflow_dispatch re-run).
+      // Fetch the PR via the API using the pr-number input.
+      console.log('[pi-review] no pull_request context — fetching PR #' + PR_INPUT + ' via API');
+      const p = await gh('/repos/' + Owner + '/' + Repo + '/pulls/' + PR_INPUT);
+      PR = p.number;
+      HEAD_SHA = (p.head && p.head.sha) || '';
+      BASE_SHA = (p.base && p.base.sha) || '';
+      console.log('[pi-review] fetched PR #' + PR + ' head=' + HEAD_SHA.slice(0, 12) + ' base=' + BASE_SHA.slice(0, 12));
+    } else {
+      setOutput('success', 'false');
+      setOutput('response', '');
+      throw new Error('No pull_request context in this run.');
+    }
   }
   const { review, found, distinct, n } = await runAgentWithRetry();
   setOutput('response', review || '');
