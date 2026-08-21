@@ -189,7 +189,13 @@ async function chat(messages) {
   });
   const text = await res.text();
   if (!res.ok) throw new Error('LLM ' + res.status + ': ' + text.slice(0, 300));
-  return JSON.parse(text);
+  const parsed = JSON.parse(text);
+  const choices = parsed && parsed.choices ? parsed.choices : [];
+  const msg = choices[0] && choices[0].message;
+  console.log('[pi-review] chat: status=' + res.status + ' choices=' + choices.length +
+    ' msg_content_len=' + String((msg && msg.content) || '').length +
+    ' tool_calls=' + (msg && Array.isArray(msg.tool_calls) ? msg.tool_calls.length : 0));
+  return parsed;
 }
 
 async function runAgent() {
@@ -212,7 +218,11 @@ async function runAgent() {
     const assistant = { role: 'assistant', content: content || null };
     if (toolCalls.length) assistant.tool_calls = toolCalls;
     messages.push(assistant);
-    if (!toolCalls.length) return content;
+    if (!toolCalls.length) {
+      console.log('[pi-review] turn ' + (turn + 1) + ': final content len=' + content.length);
+      return content;
+    }
+    console.log('[pi-review] turn ' + (turn + 1) + ': ' + toolCalls.length + ' tool call(s)');
     for (const tc of toolCalls) {
       const fn = DISPATCH[tc.function && tc.function.name];
       let args = {};
@@ -227,7 +237,43 @@ async function runAgent() {
     }
   }
   const last = [...messages].reverse().find(m => m.role === 'assistant' && m.content);
+  console.log('[pi-review] turn budget exhausted (' + MAX_TURNS + ' turns)');
   return (last && last.content) || 'Conversation exceeded turn budget without a verdict.';
+}
+
+// ---- retry wrapper ------------------------------------------------------
+// The model can intermittently return an empty message or a response without a
+// Verdict line. Retry up to 3 attempts with backoff, logging each attempt so
+// the failure mode is fully diagnosable from the run log.
+async function runAgentWithRetry() {
+  const MAX_ATTEMPTS = 3;
+  let lastError = null;
+  for (let attempt = 1; attempt <= MAX_ATTEMPTS; attempt++) {
+    console.log('[pi-review] attempt ' + attempt + '/' + MAX_ATTEMPTS +
+      ' — provider=' + PROVIDER + ' model=' + MODEL + ' base_url=' + BASE_URL);
+    try {
+      const review = await runAgent();
+      const { found, distinct, n } = extractVerdict(review);
+      console.log('[pi-review] attempt ' + attempt + ' produced review len=' +
+        String(review || '').length + ' verdict_lines=' + n +
+        ' distinct=' + JSON.stringify(distinct));
+      if (n > 0) {
+        return { review, found, distinct, n };
+      }
+      lastError = new Error('model response had no Verdict line (review len=' +
+        String(review || '').length + ')');
+      console.log('[pi-review] attempt ' + attempt + ' had no verdict — ' + lastError.message);
+    } catch (e) {
+      lastError = e;
+      console.log('[pi-review] attempt ' + attempt + ' failed: ' + (e && e.message));
+    }
+    if (attempt < MAX_ATTEMPTS) {
+      const delay = 5000 * attempt; // 5s, 10s backoff
+      console.log('[pi-review] retrying in ' + delay + 'ms');
+      await new Promise(r => setTimeout(r, delay));
+    }
+  }
+  throw lastError || new Error('all ' + MAX_ATTEMPTS + ' attempts failed');
 }
 
 function extractVerdict(text) {
@@ -245,8 +291,7 @@ async function main() {
     setOutput('response', '');
     throw new Error('No pull_request context in this run.');
   }
-  const review = await runAgent();
-  const { found, distinct, n } = extractVerdict(review);
+  const { review, found, distinct, n } = await runAgentWithRetry();
   setOutput('response', review || '');
   setOutput('success', 'true');
   console.log('pi-review: verdict lines=' + n + ' distinct=' + JSON.stringify(distinct));
