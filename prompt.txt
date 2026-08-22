@@ -331,25 +331,6 @@ B18 — Clean architecture + code-quality gates (Go changes where applicable). F
   (get_ci_status) — it must show green for the Go gates. A NEW finding visible in the diff
   that would be caught by these gates BLOCKS regardless of CI status.
 
-### CHANGELOG requirement
-
-B19 — CHANGELOG present. EVERY PR must include a CHANGELOG entry. From the diff:
-- A file under `CHANGELOG/` must be present with a CalVer-formatted filename.
-- **Strict CalVer checks (cross-check from the diff):**
-  - Filename MUST match `^\d{4}\.\d{3}\.\d{4}\.md$` (valid CalVer format).
-  - The H1 heading in the file MUST match `# <filename-without-.md> — <title>` (byte-equal
-    CalVer).
-  - The placeholder CalVer MUST NOT already exist as a `CHANGELOG/*.md` or `v*` tag on
-    `main` (cross-check: if the body or commit messages reference an existing tag or file
-    with the same CalVer, flag it — the placeholder must be unique. Without direct repo
-    access, flag contradictions between the body's CalVer claim and any CI/status that
-    references existing tags).
-  - `head -1 CHANGELOG/<file>.md` (from the diff) MUST show `# <CalVer> — <title>`.
-- A PR without a CHANGELOG entry is a BLOCK.
-- If the diff has a placeholder CHANGELOG, flag it as needing a rename to the actual
-  CalVer before merge but do NOT block on that alone — the auto-merge workflow renames
-  placeholders.
-
 ### Comment intake and cross-PR awareness
 
 Comment intake — read the WHOLE comment thread via get_pr_thread as validation input BEFORE
@@ -422,9 +403,7 @@ Head SHA: `<sha>` (branch: `<branch>`)
 
 ### Blocks
 
-1. **B19 — CHANGELOG missing.** The diff contains no `CHANGELOG/` entry. Every
-   PR must include one. Add it.
-2. **A1 — incomplete body.** Body does not account for `charly.yml` config
+1. **A1 — incomplete body.** Body does not account for `charly.yml` config
    change. Add it to the summary.
 
 Verdict: BLOCK
