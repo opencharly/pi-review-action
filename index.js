@@ -143,33 +143,17 @@ async function toolMeta() {
   };
 }
 
-async function toolCI() {
-  if (!HEAD_SHA) return { error: 'no head sha' };
-  try {
-    const rr = await gh('/repos/' + Owner + '/' + Repo + '/commits/' + HEAD_SHA + '/check-runs');
-    return (rr.check_runs || []).map(r => ({
-      name: r.name,
-      status: r.status,
-      conclusion: r.conclusion || null,
-    }));
-  } catch (e) {
-    return { error: e.message };
-  }
-}
-
 const TOOLS = [
   { type: 'function', function: { name: 'get_pr_diff', description: 'CURRENT unified diff (head vs base).', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_commits', description: 'Commit history of this PR (sha, message, author) — read commit messages since the last review here.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_thread', description: 'CURRENT live issue body plus all prior comments (older comments are stale until re-verified).', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_meta', description: 'PR metadata: title, state, mergeable, head/base sha, file counts.', parameters: { type: 'object', properties: {} } } },
-  { type: 'function', function: { name: 'get_ci_status', description: 'Check runs on the current head.', parameters: { type: 'object', properties: {} } } },
 ];
 const DISPATCH = {
   get_pr_diff: toolDiff,
   get_pr_commits: toolCommits,
   get_pr_thread: toolThread,
   get_pr_meta: toolMeta,
-  get_ci_status: toolCI,
 };
 
 const PROMPT = fs.existsSync(__dirname + '/prompt.txt')
