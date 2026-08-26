@@ -147,11 +147,18 @@ async function toolCI() {
   if (!HEAD_SHA) return { error: 'no head sha' };
   try {
     const rr = await gh('/repos/' + Owner + '/' + Repo + '/commits/' + HEAD_SHA + '/check-runs');
-    return (rr.check_runs || []).map(r => ({
-      name: r.name,
-      status: r.status,
-      conclusion: r.conclusion || null,
-    }));
+    // EXCLUDE this validator's OWN run: its details_url embeds GITHUB_RUN_ID, and the run is
+    // `in_progress` (conclusion null) while we review — it can never be green to us, so
+    // including it would make every CI-green determination unsatisfiable (the self-block
+    // cycle). The tool's purpose is to verify the repo's OTHER gates (build/go/verify/test)
+    // against the body's claims — those are the checks that must be green.
+    return (rr.check_runs || [])
+      .filter(r => !(r.details_url || '').includes('/actions/runs/' + GITHUB_RUN_ID + '/'))
+      .map(r => ({
+        name: r.name,
+        status: r.status,
+        conclusion: r.conclusion || null,
+      }));
   } catch (e) {
     return { error: e.message };
   }
@@ -162,7 +169,7 @@ const TOOLS = [
   { type: 'function', function: { name: 'get_pr_commits', description: 'Commit history of this PR (sha, message, author) — read commit messages since the last review here.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_thread', description: 'CURRENT live issue body plus all prior comments (older comments are stale until re-verified).', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_meta', description: 'PR metadata: title, state, mergeable, head/base sha, file counts.', parameters: { type: 'object', properties: {} } } },
-  { type: 'function', function: { name: 'get_ci_status', description: 'Check runs on the current head.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'get_ci_status', description: 'Check runs on the current head, EXCLUDING your own validate / validate run (filtered by run ID — it is in_progress while you review and can never be green to you). Returns only the repo\'s other gates (build/go/verify/test).', parameters: { type: 'object', properties: {} } } },
 ];
 const DISPATCH = {
   get_pr_diff: toolDiff,
