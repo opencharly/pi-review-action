@@ -162,7 +162,7 @@ const TOOLS = [
   { type: 'function', function: { name: 'get_pr_commits', description: 'Commit history of this PR (sha, message, author) — read commit messages since the last review here.', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_thread', description: 'CURRENT live issue body plus all prior comments (older comments are stale until re-verified).', parameters: { type: 'object', properties: {} } } },
   { type: 'function', function: { name: 'get_pr_meta', description: 'PR metadata: title, state, mergeable, head/base sha, file counts.', parameters: { type: 'object', properties: {} } } },
-  { type: 'function', function: { name: 'get_ci_status', description: 'Check runs on the current head.', parameters: { type: 'object', properties: {} } } },
+  { type: 'function', function: { name: 'get_ci_status', description: 'Check runs on the current head. NOTE: this includes your OWN validate / validate run, which is in_progress (conclusion null) while you review — exclude it from any CI-green determination (ground rule 5).', parameters: { type: 'object', properties: {} } } },
 ];
 const DISPATCH = {
   get_pr_diff: toolDiff,
