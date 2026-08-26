@@ -18,13 +18,16 @@ but is fully ours so the tools and staleness handling are under our control.
 | `get_pr_commits` | The PR commit history (sha, message, author) — read "commit messages since the last review" here. |
 | `get_pr_thread` | The CURRENT live issue body (flagged authoritative) **plus** all prior comments. |
 | `get_pr_meta` | PR state: title, mergeable, head/base sha, file counts. |
-| `get_ci_status` | Check runs on the current head. |
 
 The validator is instructed (in `prompt.txt`) that prior comments are **not authoritative
 and are often stale** — it must re-derive every claim from the CURRENT body/diff (R1
 reality-over-text) and dismiss superseded findings. It never pretends to have commit-message
 knowledge beyond the tools, and it never treats a self-install's unobservable green as a
-blocking finder.
+blocking finder. CI status is deliberately NOT a tool: the repo's required checks are
+enforced by branch protection (a red gate blocks the merge mechanically), the validator is
+read-only and cannot act on CI state, and its own `validate / validate` run is always
+`in_progress` while it reviews — so a CI-status tool would be self-referential and serve no
+purpose (R3: no duplication of the branch-protection mechanism).
 
 ## Usage
 
